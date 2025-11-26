@@ -8,44 +8,34 @@ const version = "0.0.1";
 pub fn main() !void {
     const debug = std.debug;
     const stdin = std.fs.File.stdin();
-    var running = true;
-
-    var context_buffer: [100]u8 = undefined;
-    var context: []const u8 = "";
+    var state: Command.State = .{
+        .root = "root",
+        .isRunning = true
+    };
 
     debug.print("Welcome to Zephyr v{s}\n\n", .{version});
-    while (running) {
-        
-        if (eql(u8, context, "")) {
-          debug.print(">> ", .{});
-        } else {
-          debug.print("[{s}] >> ", .{context});
-        }
+    while (state.isRunning) {
+
+        debug.print("[{s}] >> ", .{state.root});
 
         var buffer: [255]u8 = undefined;
         const bytes_read = try stdin.deprecatedReader().readUntilDelimiterOrEof(&buffer, '\n');
 
         if (bytes_read) |slice| {
-            if (eql(u8, slice, "exit")) {
-                running = false;
-                debug.print("Thanks for using Zephyr!\n", .{});
-            }
+            var iter = std.mem.splitScalar(u8, slice, ' ');
+            const rawCommand: Command.RawCommand = .{
+                .name = iter.next() orelse "unknown",
+                .args = &.{iter.next() orelse "unknown"}
+            };
 
-            if (eql(u8, slice, "version")) {
-                debug.print("{s}\n", .{version});
-            }
+            const command = rawCommand.parse();
 
-            if (std.mem.startsWith(u8, slice, "set ")) {
-                const msg = slice["set ".len..];
-
-                if (eql(u8, msg, "root")) {
-                    context = "";
-                } else {
-                  @memcpy(context_buffer[0..msg.len], msg);
-                  context = context_buffer[0..msg.len];
-                }
-            }
+            state = command.Run(state);
+        } else {
+            state.isRunning = false;
         }
     }
+
+    std.debug.print("\n\nBye!\n", .{});
 
 }
