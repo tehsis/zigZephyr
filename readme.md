@@ -1,9 +1,5 @@
 # Zephyr
 
-```
-This is a toy project. Little or non functionality described here might be implemented yet (and might never be.)
-```
-
 Zephyr is a _game engine_ that allows fast iterations and experimentation providing a delightful declarative experience making it suitable for human coders and LLMs.
 
 It does so by providing declarative means to build _scenes_ and levels via TOML and a Repl interface.
