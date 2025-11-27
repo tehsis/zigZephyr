@@ -1,13 +1,15 @@
 const std = @import("std");
+const sdl = @import("sdl.zig").sdl;
 
 pub const CommandHistory = struct {
     commands: []Command
 };
 
-pub const CommandType = enum(u2) {
+pub const CommandType = enum(u8) {
     exit,
     set,
     version,
+    add,
     unknown
 };
 
@@ -37,6 +39,13 @@ pub const RawCommand = struct {
             };
         }
 
+        if (std.mem.eql(u8, self.name, "add")) {
+            return .{
+                .kind = .add,
+                .args = self.args
+            };
+        }
+
         return .{
             .kind = .unknown,
             .args = null
@@ -46,7 +55,8 @@ pub const RawCommand = struct {
 
 pub const State = struct {
     root: []const u8,
-    isRunning: bool
+    isRunning: bool,
+    window: ?*sdl.SDL_Window
 };
 
 pub const Command = struct {
@@ -57,14 +67,26 @@ pub const Command = struct {
         return switch (self.kind) {
             .exit => .{
                 .isRunning = false,
-                .root = state.root
+                .root = state.root,
+                .window = undefined
             },
 
             .set => {
                 const args = self.args orelse unreachable;
                 return .{
                     .isRunning = state.isRunning,
-                    .root = args[0]
+                    .root = args[0],
+                    .window = state.window
+                };
+            },
+
+            .add => {
+                const window = sdl.SDL_CreateWindow("Hello", 640, 480, sdl.SDL_WINDOW_OPENGL);
+                _ = sdl.SDL_GL_CreateContext(window);
+                return .{
+                    .root = state.root,
+                    .isRunning = state.isRunning,
+                    .window = window
                 };
             },
             
@@ -74,12 +96,12 @@ pub const Command = struct {
 };
 
 test "command format" {
-    const c: RawCommand = .{
+    const cm: RawCommand = .{
         .name = "set",
         .args = &.{"context"}
     };
 
-    const args = c.args orelse return error.NoArgs;
+    const args = cm.args orelse return error.NoArgs;
 
     try std.testing.expect(std.mem.eql(u8, args[0], "context"));
 }
@@ -96,9 +118,9 @@ test "command run" {
         .args = null
     };
 
-    const c = rc.parse();
+    const cm = rc.parse();
 
-    const newState = c.Run(state);
+    const newState = cm.Run(state);
 
    try std.testing.expect(newState.isRunning == false);
 }
@@ -116,9 +138,9 @@ test "command set" {
         .args = &.{"context"}
     };
 
-    const c = rc.parse();
+    const cm = rc.parse();
 
-    const newState = c.Run(state);
+    const newState = cm.Run(state);
 
     try std.testing.expect(std.mem.eql(u8, newState.root, "context"));
 }

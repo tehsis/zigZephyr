@@ -1,5 +1,7 @@
 const std = @import("std");
 const eql = std.mem.eql;
+const sdl = @import("sdl.zig").sdl;
+
 
 const Command = @import("./commands.zig");
 
@@ -10,8 +12,11 @@ pub fn main() !void {
     const stdin = std.fs.File.stdin();
     var state: Command.State = .{
         .root = "root",
-        .isRunning = true
+        .isRunning = true,
+        .window = undefined
     };
+
+    _ = sdl.SDL_InitSubSystem(sdl.SDL_INIT_VIDEO);
 
     debug.print("Welcome to Zephyr v{s}\n\n", .{version});
     while (state.isRunning) {
@@ -33,6 +38,10 @@ pub fn main() !void {
             state = command.Run(state);
         } else {
             state.isRunning = false;
+        }
+
+        if (state.window) |_| {
+           _ = sdl.SDL_GL_SwapWindow(state.window);
         }
     }
 
