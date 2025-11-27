@@ -10,10 +10,11 @@ It does so by providing declarative means to build _scenes_ and levels via TOML 
 
 ![zephyr architecture](docs/zephyr.png)
 
-# Zephyr Repl
+# REPL
 
 ```
->> add scene
+>> add window 640 480 "main window"
+[main window] >> add scene
 scene_1 created
 [scene_1] >> add square x:25 y:26 color:red 
 square_1 created in scene_1
@@ -21,7 +22,19 @@ square_1 created in scene_1
 controller player.lua added to square_1
 [square_1] >> save my_game.zph
 my_game.zph created.
+[square_1] show state
+main window:
+  scene_1:
+    square_1
+      type: square
+      transform:
+        x: 25
+        y: 26
+      color: #ff0000
+      controller: player.lua
 ```
+
+# State
 
 Each game in Zephyr is fully represented by a tree. By doing so, programming in Zephyr is fully declarative and allows your code to excel either written by a human or an LLM.
 
@@ -29,6 +42,7 @@ The previous snipped will generate the following tree:
 
 ```toml
 [window.scene_1.square_1.transform]
+type = "square"
 x = 25
 y = 26
 
@@ -37,6 +51,8 @@ src = "player.lua"
 ```
 
 A game can have multiple windows (which corresponds a window manager window) but only one scene is active at a time.
+
+# Entities Controller
 
 controller scripts are used to modify the state. Zephyr won't actually care how you modify that state
 
