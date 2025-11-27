@@ -8,7 +8,7 @@ Zephyr is a _game engine_ that allows fast iterations and experimentation provid
 
 It does so by providing declarative means to build _scenes_ and levels via TOML and a Repl interface.
 
-![zephyr architecture]("docs/zephyr.png")
+![zephyr architecture](docs/zephyr.png)
 
 # Zephyr Repl
 
