@@ -55,43 +55,46 @@ pub const RawCommand = struct {
 
 pub const State = struct {
     root: []const u8,
+    version: []const u8,
     isRunning: bool,
-    window: ?*sdl.SDL_Window
+    window: ?*sdl.SDL_Window,
 };
 
 pub const Command = struct {
     kind: CommandType,
     args: ?[]const []const u8,
+    output: ?[]const u8,
+
+    allocator: std.mem.Allocator = std.heap.page_allocator,
 
     pub fn Run(self: Command, state : State) State {
-        return switch (self.kind) {
-            .exit => .{
-                .isRunning = false,
-                .root = state.root,
-                .window = undefined
+        var newState = state;
+        switch (self.kind) {
+            .exit => {
+                newState.isRunning = false;
             },
 
             .set => {
                 const args = self.args orelse unreachable;
-                return .{
-                    .isRunning = state.isRunning,
-                    .root = args[0],
-                    .window = state.window
-                };
+                newState.root = args[0];
             },
 
             .add => {
                 const window = sdl.SDL_CreateWindow("Hello", 640, 480, sdl.SDL_WINDOW_OPENGL);
                 _ = sdl.SDL_GL_CreateContext(window);
-                return .{
-                    .root = state.root,
-                    .isRunning = state.isRunning,
-                    .window = window
-                };
+                newState.window = window;
             },
-            
-            else => state
-        };
+
+            .version => {
+                self.output = state.version;
+            },
+
+            .unknown => {
+                self.output = "Command Unknown.";
+            },
+        }
+
+        return newState;
     }
 };
 
@@ -122,7 +125,7 @@ test "command run" {
 
     const newState = cm.Run(state);
 
-   try std.testing.expect(newState.isRunning == false);
+    try std.testing.expect(newState.isRunning == false);
 }
 
 test "command set" {

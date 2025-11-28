@@ -13,7 +13,8 @@ pub fn main() !void {
     var state: Command.State = .{
         .root = "root",
         .isRunning = true,
-        .window = undefined
+        .window = undefined,
+        .version = version
     };
 
     _ = sdl.SDL_InitSubSystem(sdl.SDL_INIT_VIDEO);
