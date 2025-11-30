@@ -1,45 +1,56 @@
 const std = @import("std");
 const commands = @import("commands.zig");
 
-const InstructionSet = std.AutoHashMap(commands.CommandType, fn (*State, []const u8) []const u8);
+const CommandRunner = fn (*State, []const u8) []const u8;
 
 const State = struct {
     running: bool
 };
 
-const VM = struct {
-    state: State,
-    instructionSet: InstructionSet,
+fn commandExit(state: *State, _: []const u8) []const u8 {
+    state.running = false;
+    return "Exit";
+}
 
-    pub fn Init(instructionSet: InstructionSet) VM {
-        return .{
-            .instructionSet = instructionSet,
-            .state = .{
-                .running = false,
-            }
-        };
-    }
+const default_instruction_set = std.StaticStringMap(CommandRunner).initComptime(.{
+    .{"exit", commandExit}
+});
 
-    pub fn start(self: VM) void {
-        self.state.running = true;
-    }
+pub fn VM(comptime instruction_set: std.StaticStringMap(CommandRunner)) type {
+    return struct {
+        const Self = @This();
 
-    pub fn stop(self: VM) void {
-        self.isRunning = false;
-    }
+        state: State,
 
-    pub fn exec(self: VM,command: commands.Command) []const u8 {
-        const runner = self.commandRunner.get(command.kind);
-        return runner(self, command.args);
-    } 
+        pub fn init() Self {
+            return .{
+                .state = .{ .running = false }
+            };
+        }
 
-    pub fn CommandExit(self: VM, _: []const u8) []const u8 {
-        self.isRunning = false;
-        return "Exit";
-    }
-};
+        pub fn start(self: VM) void {
+            self.state.running = true;
+        }
 
-const defaultInstructionSet = (fn() InstructionSet {
+        pub fn stop(self: VM) void {
+            self.isRunning = false;
+        }
 
-})();
+        pub fn exec(self: VM,command: commands.Command) []const u8 {
+            const runner = instruction_set.get(@tagName(command.kind)) orelse {
+                return "Unknown Command";
+            };
+
+            return runner(&self.state, command.args);
+        }
+    };
+}
+
+
+test "Default Instruction set" {
+    const DefaultVM = VM(default_instruction_set);
+    const vm = DefaultVM.init();
+
+    vm.start();
+}
 
